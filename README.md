@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/icons/icon.png" alt="MyBrowser Logo" width="120" height="120" style="border-radius:24px"/>
+<img src="assets/icons/logo.png" alt="MyBrowser Logo" width="220"/>
 
 # MyBrowser
 
