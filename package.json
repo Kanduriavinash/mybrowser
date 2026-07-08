@@ -7,7 +7,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win",
+    "build": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win",
     "build:dir": "electron-builder --dir",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -30,9 +30,15 @@
         {
           "target": "nsis",
           "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
         }
       ],
-      "icon": "assets/icons/icon.ico"
+      "icon": "assets/icons/icon.png",
+      "forceCodeSigning": false,
+      "sign": null
     },
     "nsis": {
       "oneClick": false,
