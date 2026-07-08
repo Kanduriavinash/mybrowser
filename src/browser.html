@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MyBrowser</title>
+  <meta name="description" content="MyBrowser — Your premium custom desktop browser">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="browser.css">
+</head>
+<body>
+
+  <!-- ═══════════════════ TITLE BAR ═══════════════════ -->
+  <div id="title-bar">
+    <!-- macOS-style window controls (left side) -->
+    <div id="window-controls">
+      <button class="win-btn close-btn"    id="btn-close"    title="Close">
+        <svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+      </button>
+      <button class="win-btn minimize-btn" id="btn-minimize" title="Minimize">
+        <svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5"/></svg>
+      </button>
+      <button class="win-btn maximize-btn" id="btn-maximize" title="Maximize">
+        <svg viewBox="0 0 10 10" id="maximize-icon"><rect x="2" y="2" width="6" height="6" rx="0.5"/></svg>
+      </button>
+    </div>
+
+    <!-- Tab bar -->
+    <div id="tab-bar" role="tablist" aria-label="Browser Tabs">
+      <!-- Tabs injected by JS -->
+    </div>
+
+    <button id="btn-new-tab" title="New Tab (Ctrl+T)" aria-label="Open new tab">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>
+      </svg>
+    </button>
+
+    <div id="drag-region"></div>
+  </div>
+
+  <!-- ═══════════════════ TOOLBAR ═══════════════════ -->
+  <div id="toolbar">
+    <!-- Navigation buttons -->
+    <div class="nav-group">
+      <button class="nav-btn" id="btn-back" title="Back (Alt+←)" disabled aria-label="Go back">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="12,5 7,10 12,15"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="btn-forward" title="Forward (Alt+→)" disabled aria-label="Go forward">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="8,5 13,10 8,15"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="btn-reload" title="Reload (F5)" aria-label="Reload page">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16.5 3.5A8 8 0 1 1 8 2"/>
+          <polyline points="8,2 12.5,2 12.5,6.5"/>
+        </svg>
+      </button>
+      <button class="nav-btn" id="btn-home" title="Home" aria-label="Go home">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 9.5L10 3l7 6.5V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/>
+          <path d="M8 18V13h4v5"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Address bar -->
+    <div id="address-bar-wrap">
+      <div id="security-icon" title="Connection Info">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2L18 5.5V10C18 14.5 10 18 10 18C10 18 2 14.5 2 10V5.5Z"/>
+          <polyline points="7,10 9,12 13,8"/>
+        </svg>
+      </div>
+      <input
+        type="text"
+        id="address-bar"
+        placeholder="Search or enter web address..."
+        spellcheck="false"
+        autocomplete="off"
+        autocorrect="off"
+        role="combobox"
+        aria-label="Address bar"
+      >
+      <div id="loading-indicator" class="hidden">
+        <div class="spinner"></div>
+      </div>
+      <button id="btn-clear-address" class="hidden" title="Clear" aria-label="Clear address">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="action-group">
+      <button class="action-btn" id="btn-bookmark" title="Bookmark this page (Ctrl+D)" aria-label="Bookmark this page">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="bookmark-icon">
+          <path d="M5 3h10v15l-5-3-5 3V3z"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-bookmarks-panel" title="Bookmarks" aria-label="Open bookmarks">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 3h8v11l-4-2.5L4 14Z"/>
+          <path d="M10 3.5h6v12l-4-2.5"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-history-panel" title="History (Ctrl+H)" aria-label="Open history">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="7"/>
+          <polyline points="10,6 10,10 13,13"/>
+        </svg>
+      </button>
+      <button class="action-btn ext-btn" id="btn-extension" title="Ad Blocker Extension" aria-label="Open ad blocker">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 2L17 5v5c0 5-7 8-7 8S3 15 3 10V5Z"/>
+          <line x1="7" y1="10" x2="13" y2="10"/>
+        </svg>
+        <span class="badge" id="blocked-badge">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ BROWSER CONTENT ═══════════════════ -->
+  <div id="browser-content">
+    <!-- Webviews injected by JS -->
+
+    <!-- New Tab Page (shown when no webview or blank tab) -->
+    <div id="new-tab-page" class="hidden">
+      <div class="newtab-bg"></div>
+      <div class="newtab-inner">
+        <div class="newtab-brand">
+          <div class="brand-logo">
+            <svg viewBox="0 0 60 60" fill="none">
+              <defs>
+                <linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#7c3aed"/>
+                  <stop offset="100%" stop-color="#06b6d4"/>
+                </linearGradient>
+              </defs>
+              <circle cx="30" cy="30" r="28" fill="url(#logoGrad)" opacity="0.15"/>
+              <circle cx="30" cy="30" r="18" stroke="url(#logoGrad)" stroke-width="3" fill="none"/>
+              <path d="M30 12 C20 22 20 38 30 48 C40 38 40 22 30 12Z" stroke="url(#logoGrad)" stroke-width="2.5" fill="none"/>
+              <line x1="13" y1="30" x2="47" y2="30" stroke="url(#logoGrad)" stroke-width="2.5"/>
+            </svg>
+          </div>
+          <h1>MyBrowser</h1>
+          <p class="brand-sub">Fast. Private. Yours.</p>
+        </div>
+
+        <div class="newtab-search-box">
+          <svg class="search-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="9" cy="9" r="6"/><line x1="13.5" y1="13.5" x2="17" y2="17"/>
+          </svg>
+          <input
+            type="text"
+            id="newtab-search"
+            placeholder="Search the web or enter a URL..."
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="New tab search"
+          >
+        </div>
+
+        <div class="quick-links" id="quick-links">
+          <a class="ql-item" href="#" data-url="https://www.google.com" id="ql-google">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#4285f4,#34a853)">G</div>
+            <span>Google</span>
+          </a>
+          <a class="ql-item" href="#" data-url="https://www.youtube.com" id="ql-youtube">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#ff0000,#cc0000)">▶</div>
+            <span>YouTube</span>
+          </a>
+          <a class="ql-item" href="#" data-url="https://github.com" id="ql-github">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#333,#555)">
+              <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.58 9.58 0 0 1 12 6.8c.85.004 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
+            </div>
+            <span>GitHub</span>
+          </a>
+          <a class="ql-item" href="#" data-url="https://www.reddit.com" id="ql-reddit">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#ff4500,#e03d00)">r/</div>
+            <span>Reddit</span>
+          </a>
+          <a class="ql-item" href="#" data-url="https://twitter.com" id="ql-twitter">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#000,#333)">𝕏</div>
+            <span>Twitter</span>
+          </a>
+          <a class="ql-item" href="#" data-url="https://www.netflix.com" id="ql-netflix">
+            <div class="ql-icon" style="background:linear-gradient(135deg,#e50914,#b20710)">N</div>
+            <span>Netflix</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ BOOKMARKS SIDEBAR ═══════════════════ -->
+  <div id="bookmarks-sidebar" class="sidebar" role="dialog" aria-label="Bookmarks" aria-hidden="true">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 3h10v15l-5-3-5 3V3z"/>
+        </svg>
+        <h2>Bookmarks</h2>
+      </div>
+      <button class="sidebar-close" id="close-bookmarks" aria-label="Close bookmarks">✕</button>
+    </div>
+    <div class="sidebar-search-wrap">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="7" cy="7" r="4"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+      </svg>
+      <input type="text" id="bookmark-search" placeholder="Search bookmarks..." aria-label="Search bookmarks">
+    </div>
+    <div class="sidebar-body" id="bookmarks-list" role="list">
+      <div class="empty-state">
+        <div class="empty-icon">🔖</div>
+        <p>No bookmarks yet.<br>Click the ☆ icon to add one.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ HISTORY SIDEBAR ═══════════════════ -->
+  <div id="history-sidebar" class="sidebar" role="dialog" aria-label="History" aria-hidden="true">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="7"/><polyline points="10,6 10,10 13,13"/>
+        </svg>
+        <h2>History</h2>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="text-action-btn" id="clear-history-btn">Clear All</button>
+        <button class="sidebar-close" id="close-history" aria-label="Close history">✕</button>
+      </div>
+    </div>
+    <div class="sidebar-search-wrap">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="7" cy="7" r="4"/><line x1="10.5" y1="10.5" x2="14" y2="14"/>
+      </svg>
+      <input type="text" id="history-search" placeholder="Search history..." aria-label="Search history">
+    </div>
+    <div class="sidebar-body" id="history-list" role="list">
+      <div class="empty-state">
+        <div class="empty-icon">🕰️</div>
+        <p>No history yet.<br>Start browsing!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ AD BLOCKER EXTENSION PANEL ═══════════════════ -->
+  <div id="extension-panel" class="ext-panel" role="dialog" aria-label="Ad Blocker Extension" aria-hidden="true">
+    <div class="ext-panel-header">
+      <div class="ext-brand">
+        <div class="ext-shield">🛡️</div>
+        <div>
+          <div class="ext-title">Ad Blocker</div>
+          <div class="ext-sub">MyBrowser Extension</div>
+        </div>
+      </div>
+      <label class="toggle" title="Toggle Ad Blocker" aria-label="Toggle Ad Blocker">
+        <input type="checkbox" id="adblocker-toggle" checked>
+        <span class="toggle-track">
+          <span class="toggle-thumb"></span>
+        </span>
+      </label>
+    </div>
+
+    <div class="ext-stats">
+      <div class="stat-tile">
+        <div class="stat-val" id="blocked-count">0</div>
+        <div class="stat-lbl">Ads Blocked</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-tile">
+        <div class="stat-val status-on" id="protection-status">ON</div>
+        <div class="stat-lbl">Protection</div>
+      </div>
+    </div>
+
+    <div class="ext-section">
+      <div class="ext-section-head">
+        <span>Recently Blocked</span>
+        <button class="text-action-btn" id="clear-stats-btn">Clear</button>
+      </div>
+      <div class="blocked-feed" id="blocked-feed">
+        <div class="empty-state small">
+          <div class="empty-icon">✅</div>
+          <p>All clear! No ads blocked<br>on this page yet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ OVERLAY ═══════════════════ -->
+  <div id="overlay" class="hidden" aria-hidden="true"></div>
+
+  <!-- ═══════════════════ UPDATE TOAST ═══════════════════ -->
+  <div id="update-toast" class="hidden" role="alert" aria-live="polite">
+    <div class="toast-icon-wrap">🚀</div>
+    <div class="toast-body">
+      <div class="toast-ttl" id="toast-title">Update Available</div>
+      <div class="toast-msg" id="toast-msg">Downloading in background...</div>
+      <div class="toast-progress-wrap hidden" id="toast-progress-wrap">
+        <div class="toast-progress-bar" id="toast-progress-bar"></div>
+      </div>
+    </div>
+    <button class="toast-cta hidden" id="toast-restart-btn">Restart Now</button>
+    <button class="toast-dismiss" id="toast-dismiss-btn" aria-label="Dismiss">✕</button>
+  </div>
+
+  <script src="browser.js"></script>
+</body>
+</html>

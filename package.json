@@ -1,0 +1,60 @@
+{
+  "name": "mybrowser",
+  "version": "1.0.0",
+  "description": "MyBrowser - A premium custom desktop browser with tabs, bookmarks, history, and built-in ad blocker",
+  "main": "main.js",
+  "author": "MyBrowser Team",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "build:dir": "electron-builder --dir",
+    "postinstall": "electron-builder install-app-deps"
+  },
+  "build": {
+    "appId": "com.mybrowser.app",
+    "productName": "MyBrowser",
+    "copyright": "Copyright © 2026 MyBrowser",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "assets/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "assets/icons/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MyBrowser"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Kanduriavinash",
+      "repo": "mybrowser",
+      "releaseType": "release"
+    }
+  },
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "electron-updater": "^6.1.7"
+  },
+  "devDependencies": {
+    "electron": "^28.3.3",
+    "electron-builder": "^24.13.3"
+  }
+}
