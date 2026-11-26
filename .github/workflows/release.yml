@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # Required for electron-builder to create GitHub Releases
+  contents: write
 
 jobs:
   build-windows:
@@ -21,19 +21,69 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify icon file exists
+        run: |
+          if (Test-Path "assets/icons/icon.ico") {
+            Write-Host "✅ icon.ico found"
+            Get-Item "assets/icons/icon.ico" | Select-Object Name, Length
+          } else {
+            Write-Host "❌ icon.ico NOT found — generating from PNG..."
+            python -c "
+from PIL import Image
+import struct, io
+
+img = Image.open('assets/icons/logo.png').convert('RGBA')
+sizes = [16, 32, 48, 64, 128, 256]
+images = []
+for s in sizes:
+    resized = img.resize((s, s), Image.LANCZOS)
+    buf = io.BytesIO()
+    resized.save(buf, format='PNG')
+    images.append(buf.getvalue())
+
+num = len(images)
+header = struct.pack('<HHH', 0, 1, num)
+dir_size = num * 16
+offset = 6 + dir_size
+dirs = b''
+for i, s in enumerate(sizes):
+    data = images[i]
+    dirs += struct.pack('<BBBBHHII', s if s < 256 else 0, s if s < 256 else 0, 0, 0, 1, 32, len(data), offset)
+    offset += len(data)
+
+with open('assets/icons/icon.ico', 'wb') as f:
+    f.write(header + dirs)
+    for data in images:
+        f.write(data)
+print('ICO generated OK')
+"
+            Write-Host "✅ icon.ico generated"
+          }
+
       - name: Build & publish to GitHub Releases
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: electron-builder
         run: npx electron-builder --win nsis portable --publish always
 
-      - name: Upload build artifacts (backup)
+      - name: List dist output
+        if: always()
+        run: |
+          if (Test-Path dist/) {
+            Get-ChildItem dist/ -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object Name, Length
+          } else {
+            Write-Host "dist/ folder not found"
+          }
+
+      - name: Upload artifacts (backup)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: MyBrowser-Windows-${{ github.ref_name }}

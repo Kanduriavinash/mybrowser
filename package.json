@@ -18,7 +18,8 @@
     "productName": "MyBrowser",
     "copyright": "Copyright © 2026 MyBrowser",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "files": [
       "main.js",
@@ -38,7 +39,7 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/icons/logo.png",
+      "icon": "assets/icons/icon.ico",
       "forceCodeSigning": false,
       "sign": null,
       "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
