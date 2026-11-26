@@ -6,7 +6,7 @@
 
 **A fast, private, and beautiful custom desktop browser — built for everyone.**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-7c3aed?style=for-the-badge)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.1-7c3aed?style=for-the-badge)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Built with Electron](https://img.shields.io/badge/built%20with-Electron-47848f?style=for-the-badge&logo=electron)](https://www.electronjs.org/)

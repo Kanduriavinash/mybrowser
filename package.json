@@ -1,14 +1,14 @@
 {
   "name": "mybrowser",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MyBrowser - A premium custom desktop browser with tabs, bookmarks, history, and built-in ad blocker",
   "main": "main.js",
   "author": "MyBrowser Team",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && SET WIN_CSC_LINK= && electron-builder --win --config.win.signingHashAlgorithms=[] --config.win.sign=null",
-    "build:portable": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win portable",
+    "build": "electron-builder --win",
+    "build:local": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win zip",
     "build:zip": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win zip",
     "build:dir": "electron-builder --dir",
     "postinstall": "electron-builder install-app-deps"
@@ -30,7 +30,7 @@
     "win": {
       "target": [
         {
-          "target": "zip",
+          "target": "nsis",
           "arch": ["x64"]
         },
         {
