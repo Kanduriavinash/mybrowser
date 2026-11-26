@@ -7,7 +7,9 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "build": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win",
+    "build": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && SET WIN_CSC_LINK= && electron-builder --win --config.win.signingHashAlgorithms=[] --config.win.sign=null",
+    "build:portable": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win portable",
+    "build:zip": "SET CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win zip",
     "build:dir": "electron-builder --dir",
     "postinstall": "electron-builder install-app-deps"
   },
@@ -28,7 +30,7 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
+          "target": "zip",
           "arch": ["x64"]
         },
         {
@@ -36,9 +38,10 @@
           "arch": ["x64"]
         }
       ],
-      "icon": "assets/icons/icon.png",
+      "icon": "assets/icons/logo.png",
       "forceCodeSigning": false,
-      "sign": null
+      "sign": null,
+      "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,

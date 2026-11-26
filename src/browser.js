@@ -46,12 +46,12 @@ const historySearch    = $('history-search');
 const overlay          = $('overlay');
 
 // Extension panel
-const extPanel       = $('extension-panel');
-const adToggle       = $('adblocker-toggle');
-const blockedCount   = $('blocked-count');
-const protStatus     = $('protection-status');
-const blockedFeed    = $('blocked-feed');
-const clearStatsBtn  = $('clear-stats-btn');
+const extPanel        = $('extension-panel');
+const adToggle        = $('adblocker-toggle');
+const blockedCountEl  = $('blocked-count');   // renamed from blockedCount to avoid collision with state.blockedCount
+const protStatus      = $('protection-status');
+const blockedFeed     = $('blocked-feed');
+const clearStatsBtn   = $('clear-stats-btn');
 
 // Update toast
 const updateToast    = $('update-toast');
@@ -66,25 +66,40 @@ const toastProgressBar = $('toast-progress-bar');
 //  INITIALISATION
 // ══════════════════════════════════════════════════════════════
 async function init() {
-  state.settings = await window.myBrowser.getSettings();
-  const adStats  = await window.myBrowser.getAdBlockerStats();
-  state.adBlockerEnabled = adStats.enabled;
-  state.blockedCount     = adStats.count;
+  try {
+    state.settings = await window.myBrowser.getSettings();
+    const adStats  = await window.myBrowser.getAdBlockerStats();
+    state.adBlockerEnabled = adStats.enabled;
+    state.blockedCount     = adStats.count;
 
-  adToggle.checked = state.adBlockerEnabled;
-  updateAdBlockerUI(adStats);
+    adToggle.checked = state.adBlockerEnabled;
+    updateAdBlockerUI(adStats);
 
-  setupWindowControls();
-  setupToolbar();
-  setupNewTabPage();
-  setupSidebars();
-  setupExtensionPanel();
-  setupUpdateToast();
-  setupGlobalEvents();
-  setupKeyboardShortcuts();
+    setupWindowControls();
+    setupToolbar();
+    setupNewTabPage();
+    setupSidebars();
+    setupSettings();
+    setupExtensionPanel();
+    setupUpdateToast();
+    setupGlobalEvents();
+    setupKeyboardShortcuts();
 
-  // Open initial tab
-  createTab(state.settings.homepage || 'https://www.google.com');
+    // Open initial tab
+    createTab(state.settings.homepage || 'https://www.google.com');
+
+    // Ensure webviews fill the full content area (safety net for Electron)
+    requestAnimationFrame(() => resizeWebviews());
+    window.addEventListener('resize', resizeWebviews);
+  } catch (err) {
+    console.error('MyBrowser failed to start:', err);
+    document.body.innerHTML = `
+      <div style="padding:40px;color:#e6edf3;font-family:Inter,sans-serif;text-align:center">
+        <h1 style="color:#f85149;margin-bottom:12px">MyBrowser failed to start</h1>
+        <p style="color:#8b949e">${err.message || err}</p>
+        <p style="color:#484f58;margin-top:16px;font-size:12px">Try running: npm install && npm start</p>
+      </div>`;
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -95,9 +110,9 @@ function setupWindowControls() {
   $('btn-minimize').addEventListener('click', () => window.myBrowser.minimize());
   $('btn-maximize').addEventListener('click', () => window.myBrowser.maximize());
 
-  window.myBrowser.on('window-state', state => {
+  window.myBrowser.on('window-state', windowState => {
     const icon = $('maximize-icon');
-    if (state === 'maximized') {
+    if (windowState === 'maximized') {
       icon.innerHTML = '<rect x="4" y="2" width="5" height="5" rx="0.5"/><rect x="2" y="4" width="5" height="5" rx="0.5"/>';
     } else {
       icon.innerHTML = '<rect x="2" y="2" width="6" height="6" rx="0.5"/>';
@@ -129,6 +144,7 @@ function createTab(url = '', background = false) {
   const loader = document.createElement('div');
   loader.className = 'tab-loading hidden';
   favWrap.appendChild(fav);
+  favWrap.appendChild(loader); // ← always in DOM, toggled via 'hidden' class
 
   const title = document.createElement('span');
   title.className = 'tab-title';
@@ -147,11 +163,20 @@ function createTab(url = '', background = false) {
   // ── Webview ──
   const wv = document.createElement('webview');
   wv.setAttribute('allowpopups', '');
-  wv.setAttribute('webpreferences', 'contextIsolation=yes, sandbox=yes');
-  wv.style.cssText = 'width:100%;height:100%;border:none;position:absolute;top:0;left:0;display:none;';
+  wv.setAttribute('webpreferences', 'contextIsolation=true, sandbox=false');
+  wv.src = 'about:blank'; // required for WebContents attachment in Electron
+  wv.style.cssText = 'position:absolute;top:0;right:0;bottom:0;left:0;border:none;display:none;';
   content.appendChild(wv);
 
-  const tabObj = { id, webview: wv, tab, titleEl: title, favEl: fav, favWrap, loader, url, title: 'New Tab', favicon: '' };
+  // Give this new webview explicit pixel dimensions right away
+  const ch = content.offsetHeight, cw = content.offsetWidth;
+  if (ch > 0 && cw > 0) { wv.style.height = ch + 'px'; wv.style.width = cw + 'px'; }
+
+  const tabObj = {
+    id, webview: wv, tab, titleEl: title, favEl: fav, favWrap, loader,
+    url, title: 'New Tab', favicon: '', isNewTab: !url,
+    webviewReady: false, pendingUrl: null
+  };
   state.tabs.push(tabObj);
 
   setupWebviewEvents(tabObj);
@@ -166,6 +191,7 @@ function createTab(url = '', background = false) {
     navigate(target, tabObj);
   } else {
     showNewTabPage(true);
+    if (!background) newtabSearch.focus();
   }
 
   return tabObj;
@@ -207,14 +233,23 @@ function switchTab(id) {
   tabObj.tab.classList.add('active');
   tabObj.tab.setAttribute('aria-selected', 'true');
   tabObj.webview.classList.add('active');
-  tabObj.webview.style.display = 'flex';
   state.activeTab = tabObj;
+
+  // Show/hide new-tab page based on whether this tab has a URL loaded
+  if (isNewTabUrl(tabObj.url)) {
+    newTabPage.classList.remove('hidden');
+    tabObj.webview.style.display = 'none';
+  } else {
+    newTabPage.classList.add('hidden');
+    tabObj.webview.style.display = 'block';
+  }
 
   // Update toolbar
   updateToolbarForTab(tabObj);
 
   // Scroll tab into view
   tabObj.tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  requestAnimationFrame(() => resizeWebviews());
 }
 
 function updateToolbarForTab(tabObj) {
@@ -239,11 +274,21 @@ function updateToolbarForTab(tabObj) {
 // ══════════════════════════════════════════════════════════════
 function setupWebviewEvents(tabObj) {
   const wv = tabObj.webview;
+  const { favEl, loader } = tabObj;
+
+  wv.addEventListener('dom-ready', () => {
+    tabObj.webviewReady = true;
+    if (tabObj.pendingUrl) {
+      const url = tabObj.pendingUrl;
+      tabObj.pendingUrl = null;
+      try { wv.loadURL(url); } catch (e) { console.error(e); }
+    }
+    resizeWebviews();
+  });
 
   wv.addEventListener('did-start-loading', () => {
-    tabObj.favWrap.innerHTML = '';
-    tabObj.favWrap.appendChild(tabObj.loader);
-    tabObj.loader.classList.remove('hidden');
+    favEl.style.display = 'none';
+    loader.classList.remove('hidden');
     if (state.activeTab?.id === tabObj.id) {
       loadingInd.classList.remove('hidden');
       btnReload.title = 'Stop (Esc)';
@@ -251,9 +296,8 @@ function setupWebviewEvents(tabObj) {
   });
 
   wv.addEventListener('did-stop-loading', async () => {
-    tabObj.loader.classList.add('hidden');
-    tabObj.favWrap.innerHTML = '';
-    tabObj.favWrap.appendChild(tabObj.favEl);
+    loader.classList.add('hidden');
+    favEl.style.display = '';
     if (state.activeTab?.id === tabObj.id) {
       loadingInd.classList.add('hidden');
       btnReload.title = 'Reload (F5)';
@@ -316,14 +360,21 @@ function setupWebviewEvents(tabObj) {
 
   wv.addEventListener('did-fail-load', (e) => {
     if (e.errorCode === -3) return; // Aborted (user navigated away)
-    tabObj.titleEl.textContent = 'Error';
-    if (state.activeTab?.id === tabObj.id) loadingInd.classList.add('hidden');
+    loader.classList.add('hidden');
+    favEl.style.display = '';
+    if (e.errorCode !== 0) tabObj.titleEl.textContent = 'Error';
+    if (state.activeTab?.id === tabObj.id) {
+      loadingInd.classList.add('hidden');
+      btnReload.title = 'Reload (F5)';
+    }
   });
 
-  // New window → open as new tab
+  // New window → open as new tab (deprecated event, kept for compatibility)
   wv.addEventListener('new-window', (e) => {
     if (e.url && e.url !== 'about:blank') createTab(e.url);
   });
+
+  // Modern setWindowOpenHandler equivalent via ipc (handled in main.js)
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -338,30 +389,49 @@ function navigate(input, tabObj) {
   tabObj.url = url;
 
   if (isNewTabUrl(url)) {
-    showNewTabPage(true);
+    showNewTabPage(true, tabObj);
     return;
   }
 
-  showNewTabPage(false);
-  try { tabObj.webview.loadURL(url); } catch (e) { console.error(e); }
+  showNewTabPage(false, tabObj);
+  loadWebviewUrl(tabObj, url);
+}
+
+function loadWebviewUrl(tabObj, url) {
+  const wv = tabObj.webview;
+  if (tabObj.webviewReady) {
+    try { wv.loadURL(url); } catch (e) { console.error(e); }
+  } else {
+    tabObj.pendingUrl = url;
+  }
 }
 
 function resolveUrl(input) {
   input = input.trim();
   if (!input) return '';
 
-  // Already a valid URL
+  // Already a valid URL with protocol
   try {
     const u = new URL(input);
     if (u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'file:') return input;
   } catch {}
 
-  // Has dots → likely a domain
-  if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(\/.*)?$/.test(input)) {
+  // localhost with optional port
+  if (/^localhost(:\d+)?(\/?.*)?$/i.test(input)) {
+    return 'http://' + input;
+  }
+
+  // IP address with optional port
+  if (/^(\d{1,3}\.){3}\d{1,3}(:\d+)?(\/.*)?$/.test(input)) {
+    return 'http://' + input;
+  }
+
+  // Has dots and a valid TLD → likely a domain
+  if (/^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(input)) {
     return 'https://' + input;
   }
 
-  // Otherwise → search
+  // Otherwise → search query
   const engine = state.settings.searchEngine || 'https://www.google.com/search?q=';
   return engine + encodeURIComponent(input);
 }
@@ -370,18 +440,34 @@ function isNewTabUrl(url) {
   return !url || url === 'about:blank' || url === '' || url === 'about:newtab';
 }
 
-function showNewTabPage(show) {
+function showNewTabPage(show, tabObj) {
+  // If no tabObj provided, fall back to activeTab
+  const tObj = tabObj || state.activeTab;
   if (show) {
     newTabPage.classList.remove('hidden');
-    if (state.activeTab) state.activeTab.webview.style.display = 'none';
+    if (tObj) tObj.webview.style.display = 'none';
+    if (tObj) tObj.isNewTab = true;
   } else {
     newTabPage.classList.add('hidden');
-    if (state.activeTab) state.activeTab.webview.style.display = 'flex';
+    if (tObj) tObj.webview.style.display = 'block';
+    if (tObj) tObj.isNewTab = false;
   }
 }
 
 function getDefaultFavicon() {
   return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7' fill='%2330363d'/%3E%3C/svg%3E";
+}
+
+// ── Resize all webviews to fill the content area (belt-and-suspenders for Electron) ──
+function resizeWebviews() {
+  const h = content.offsetHeight;
+  const w = content.offsetWidth;
+  if (!h || !w) return;
+  state.tabs.forEach(t => {
+    // Only set explicit px if CSS inset isn't enough (Electron quirk)
+    t.webview.style.width  = w + 'px';
+    t.webview.style.height = h + 'px';
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -441,6 +527,7 @@ function setupToolbar() {
   btnBookPanel.addEventListener('click',  () => togglePanel('bookmarks'));
   btnHistPanel.addEventListener('click',  () => togglePanel('history'));
   btnExtension.addEventListener('click',  () => toggleExtPanel());
+  $('btn-settings').addEventListener('click', () => toggleSettingsPanel());
 
   // Overlay closes panels
   overlay.addEventListener('click', closeAllPanels);
@@ -514,8 +601,88 @@ function closeAllPanels() {
   bookmarksSidebar.classList.remove('open');
   historySidebar.classList.remove('open');
   extPanel.classList.remove('open');
+  const settPanel = $('settings-panel');
+  if (settPanel) { settPanel.classList.add('hidden'); settPanel.setAttribute('aria-hidden', 'true'); }
   [bookmarksSidebar, historySidebar, extPanel].forEach(el => el.setAttribute('aria-hidden', 'true'));
   overlay.classList.add('hidden');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SETTINGS PANEL
+// ══════════════════════════════════════════════════════════════
+function toggleSettingsPanel() {
+  const panel = $('settings-panel');
+  if (!panel) return;
+  const isHidden = panel.classList.contains('hidden');
+  closeAllPanels();
+  if (isHidden) {
+    panel.classList.remove('hidden');
+    panel.setAttribute('aria-hidden', 'false');
+    // Populate current settings
+    $('settings-homepage').value      = state.settings.homepage || '';
+    $('settings-search-engine').value = state.settings.searchEngine || '';
+    $('settings-adblocker').checked   = state.adBlockerEnabled;
+    overlay.classList.remove('hidden');
+  }
+}
+
+function setupSettings() {
+  const panel = $('settings-panel');
+  if (!panel) return;
+
+  $('close-settings').addEventListener('click', () => closeAllPanels());
+
+  $('settings-save').addEventListener('click', async () => {
+    const homepage     = $('settings-homepage').value.trim() || 'https://www.google.com';
+    const searchEngine = $('settings-search-engine').value.trim() || 'https://www.google.com/search?q=';
+    const adBlocker    = $('settings-adblocker').checked;
+
+    state.settings = await window.myBrowser.saveSettings({ homepage, searchEngine, adBlockerEnabled: adBlocker });
+
+    if (adBlocker !== state.adBlockerEnabled) {
+      const result = await window.myBrowser.toggleAdBlocker(adBlocker);
+      state.adBlockerEnabled = result.enabled;
+      adToggle.checked = result.enabled;
+      protStatus.textContent = result.enabled ? 'ON' : 'OFF';
+      protStatus.className   = 'stat-val ' + (result.enabled ? 'status-on' : 'status-off');
+    }
+
+    closeAllPanels();
+    showToastNotification('Settings saved!');
+  });
+
+  $('settings-clear-history').addEventListener('click', async () => {
+    await window.myBrowser.clearHistory();
+    showToastNotification('History cleared.');
+  });
+
+  $('settings-clear-stats').addEventListener('click', async () => {
+    await window.myBrowser.clearAdBlockerStats();
+    state.blockedCount = 0;
+    blockedCountEl.textContent = '0';
+    blockedBadge.textContent   = '0';
+    showToastNotification('Ad blocker stats cleared.');
+  });
+}
+
+function showToastNotification(msg) {
+  let toast = $('mini-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'mini-toast';
+    toast.style.cssText = `
+      position:fixed; bottom:20px; right:20px; z-index:2000;
+      background:var(--bg-elevated); border:1px solid var(--border-strong);
+      border-radius:var(--r-md); padding:10px 16px; font-size:13px;
+      color:var(--text-primary); box-shadow:var(--shadow-md);
+      transition:opacity 0.3s; opacity:0; pointer-events:none;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -684,7 +851,7 @@ function setupExtensionPanel() {
     blockedBadge.textContent = data.count > 99 ? '99+' : data.count;
     blockedBadge.classList.add('pulse');
     setTimeout(() => blockedBadge.classList.remove('pulse'), 400);
-    blockedCount.textContent = data.count;
+    blockedCountEl.textContent = data.count;
     if (extPanel.classList.contains('open') && data.recent) {
       renderBlockedFeed(data.recent);
     }
@@ -692,7 +859,7 @@ function setupExtensionPanel() {
 }
 
 function updateAdBlockerUI({ enabled, count, recent }) {
-  blockedCount.textContent = count || 0;
+  blockedCountEl.textContent = count || 0;
   blockedBadge.textContent = count > 99 ? '99+' : (count || 0);
   protStatus.textContent   = enabled ? 'ON' : 'OFF';
   protStatus.className     = 'stat-val ' + (enabled ? 'status-on' : 'status-off');
@@ -782,7 +949,16 @@ function setupKeyboardShortcuts() {
     if (ctrl && e.key === 'h') { e.preventDefault(); togglePanel('history'); }
     if (ctrl && e.key === 'b') { e.preventDefault(); togglePanel('bookmarks'); }
     if (e.key === 'F5')        { e.preventDefault(); state.activeTab?.webview.reload(); }
-    if (e.key === 'Escape')    { closeAllPanels(); }
+    if (e.key === 'Escape') {
+      if (!overlay.classList.contains('hidden') || extPanel.classList.contains('open')) {
+        closeAllPanels();
+      } else {
+        const wv = state.activeTab?.webview;
+        if (wv) {
+          try { if (wv.isLoading()) wv.stop(); } catch { /* ignore */ }
+        }
+      }
+    }
 
     // Ctrl+Tab / Ctrl+Shift+Tab — switch tabs
     if (ctrl && e.key === 'Tab') {
@@ -800,7 +976,9 @@ function setupKeyboardShortcuts() {
       if (state.tabs[idx]) switchTab(state.tabs[idx].id);
     }
     // Ctrl+9 — last tab
-    if (ctrl && e.key === '9') { switchTab(state.tabs[state.tabs.length - 1].id); }
+    if (ctrl && e.key === '9') {
+      if (state.tabs.length > 0) switchTab(state.tabs[state.tabs.length - 1].id);
+    }
   });
 }
 

@@ -123,6 +123,12 @@
         </svg>
         <span class="badge" id="blocked-badge">0</span>
       </button>
+      <button class="action-btn" id="btn-settings" title="Settings" aria-label="Open settings">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="2.5"/>
+          <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -298,6 +304,66 @@
 
   <!-- ═══════════════════ OVERLAY ═══════════════════ -->
   <div id="overlay" class="hidden" aria-hidden="true"></div>
+
+  <!-- ═══════════════════ SETTINGS PANEL ═══════════════════ -->
+  <div id="settings-panel" class="settings-panel hidden" role="dialog" aria-label="Settings" aria-hidden="true">
+    <div class="settings-header">
+      <div class="sidebar-title">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="2.5"/>
+          <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42"/>
+        </svg>
+        <h2>Settings</h2>
+      </div>
+      <button class="sidebar-close" id="close-settings" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-body">
+      <div class="settings-section">
+        <div class="settings-section-title">General</div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-homepage">Homepage</label>
+          <input type="text" id="settings-homepage" class="settings-input" placeholder="https://www.google.com" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="settings-row">
+          <label class="settings-label" for="settings-search-engine">Search Engine URL</label>
+          <input type="text" id="settings-search-engine" class="settings-input" placeholder="https://www.google.com/search?q=" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Privacy</div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">Ad Blocker</div>
+            <div class="settings-sublabel">Block ads and trackers across all sites</div>
+          </div>
+          <label class="toggle" title="Toggle Ad Blocker">
+            <input type="checkbox" id="settings-adblocker" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-title">Data</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Clear Browsing History</div>
+            <div class="settings-sublabel">Remove all visited pages from history</div>
+          </div>
+          <button class="settings-action-btn danger" id="settings-clear-history">Clear History</button>
+        </div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Clear Ad Blocker Stats</div>
+            <div class="settings-sublabel">Reset blocked ads counter</div>
+          </div>
+          <button class="settings-action-btn" id="settings-clear-stats">Clear Stats</button>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button class="settings-save-btn" id="settings-save">Save Settings</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════ UPDATE TOAST ═══════════════════ -->
   <div id="update-toast" class="hidden" role="alert" aria-live="polite">
