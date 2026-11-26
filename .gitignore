@@ -2,4 +2,4 @@ node_modules/
 dist/
 .DS_Store
 *.log
-*.ico
+# Note: *.ico excluded intentionally — see assets/icons/icon.ico which IS tracked
