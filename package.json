@@ -1,6 +1,6 @@
 {
   "name": "mybrowser",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MyBrowser - A premium custom desktop browser with tabs, bookmarks, history, and built-in ad blocker",
   "main": "main.js",
   "author": "MyBrowser Team",

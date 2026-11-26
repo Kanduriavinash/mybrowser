@@ -241,7 +241,7 @@ function switchTab(id) {
     tabObj.webview.style.display = 'none';
   } else {
     newTabPage.classList.add('hidden');
-    tabObj.webview.style.display = 'block';
+    tabObj.webview.style.display = 'flex';
   }
 
   // Update toolbar
@@ -465,7 +465,7 @@ function showNewTabPage(show, tabObj) {
     if (tObj) tObj.isNewTab = true;
   } else {
     newTabPage.classList.add('hidden');
-    if (tObj) tObj.webview.style.display = 'block';
+    if (tObj) tObj.webview.style.display = 'flex';
     if (tObj) tObj.isNewTab = false;
   }
 }
