@@ -1,6 +1,6 @@
 {
   "name": "mybrowser",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MyBrowser - A premium custom desktop browser with tabs, bookmarks, history, and built-in ad blocker",
   "main": "main.js",
   "author": "MyBrowser Team",
@@ -41,7 +41,7 @@
       ],
       "icon": "assets/icons/icon.ico",
       "forceCodeSigning": false,
-      "sign": null
+      "signExecutable": false
     },
     "portable": {
       "artifactName": "${productName}-Portable-${version}.${ext}"
@@ -64,10 +64,10 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
-    "electron-updater": "^6.1.7"
+    "electron-updater": "^6.8.11"
   },
   "devDependencies": {
-    "electron": "^28.3.3",
-    "electron-builder": "^24.13.3"
+    "electron": "^45.5.0",
+    "electron-builder": "^26.18.0"
   }
 }

@@ -33,7 +33,7 @@ contextBridge.exposeInMainWorld('myBrowser', {
 
   // ── Event Listeners ──────────────────────────────────────────────────────
   on: (channel, callback) => {
-    const allowed = ['ad-blocked', 'update-status', 'open-new-tab', 'window-state'];
+    const allowed = ['ad-blocked', 'update-status', 'open-new-tab', 'window-state', 'fullscreen-change'];
     if (allowed.includes(channel)) {
       const handler = (_, data) => callback(data);
       ipcRenderer.on(channel, handler);

@@ -313,7 +313,9 @@ body {
 }
 
 #security-icon { display: flex; align-items: center; }
-#security-icon svg { width: 14px; height: 14px; color: var(--success); }
+#security-icon svg { width: 14px; height: 14px; color: var(--success); transition: color var(--t-fast); }
+#security-icon.insecure svg { color: var(--warning); }
+#security-icon.neutral svg { color: var(--text-muted); }
 
 #address-bar {
   flex: 1;
@@ -430,6 +432,14 @@ webview {
   border: none;
 }
 webview.active { display: flex; }
+
+body.html-fullscreen #title-bar,
+body.html-fullscreen #toolbar {
+  display: none;
+}
+body.html-fullscreen #browser-content {
+  top: 0;
+}
 
 /* ── New Tab Page ─────────────────────────────────────────────── */
 #new-tab-page {

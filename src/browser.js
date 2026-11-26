@@ -163,7 +163,7 @@ function createTab(url = '', background = false) {
   // ── Webview ──
   const wv = document.createElement('webview');
   wv.setAttribute('allowpopups', '');
-  wv.setAttribute('webpreferences', 'contextIsolation=true, sandbox=false');
+  wv.setAttribute('webpreferences', 'contextIsolation=true');
   wv.src = 'about:blank'; // required for WebContents attachment in Electron
   wv.style.cssText = 'position:absolute;top:0;right:0;bottom:0;left:0;border:none;display:none;';
   content.appendChild(wv);
@@ -252,17 +252,38 @@ function switchTab(id) {
   requestAnimationFrame(() => resizeWebviews());
 }
 
+function safeCanGoBack(tabObj) {
+  try { return Boolean(tabObj?.webviewReady && tabObj.webview.canGoBack()); } catch { return false; }
+}
+
+function safeCanGoForward(tabObj) {
+  try { return Boolean(tabObj?.webviewReady && tabObj.webview.canGoForward()); } catch { return false; }
+}
+
+function updateSecurityIcon(url) {
+  const sec = $('security-icon');
+  if (!sec) return;
+  sec.classList.remove('insecure', 'neutral');
+  if (!url || isNewTabUrl(url)) {
+    sec.classList.add('neutral');
+    sec.title = 'New Tab';
+  } else if (url.startsWith('https://')) {
+    sec.title = 'Connection is secure (HTTPS)';
+  } else {
+    sec.classList.add('insecure');
+    sec.title = 'Connection is not secure';
+  }
+}
+
 function updateToolbarForTab(tabObj) {
-  const wv = tabObj.webview;
   addressBar.value = tabObj.url && !isNewTabUrl(tabObj.url) ? tabObj.url : '';
   
   // Update nav button states
-  try {
-    btnBack.disabled    = !wv.canGoBack?.();
-    btnForward.disabled = !wv.canGoForward?.();
-  } catch { btnBack.disabled = true; btnForward.disabled = true; }
+  btnBack.disabled    = !safeCanGoBack(tabObj);
+  btnForward.disabled = !safeCanGoForward(tabObj);
 
-  // Update bookmark button
+  // Update security & bookmark indicators
+  updateSecurityIcon(tabObj.url);
   updateBookmarkButton(tabObj.url);
 
   // Update address bar clear button
@@ -305,8 +326,8 @@ function setupWebviewEvents(tabObj) {
 
     // Update nav buttons
     if (state.activeTab?.id === tabObj.id) {
-      btnBack.disabled    = !wv.canGoBack();
-      btnForward.disabled = !wv.canGoForward();
+      btnBack.disabled    = !safeCanGoBack(tabObj);
+      btnForward.disabled = !safeCanGoForward(tabObj);
     }
 
     // Add to history
@@ -318,6 +339,7 @@ function setupWebviewEvents(tabObj) {
       await window.myBrowser.addHistory({ url, title, favicon: tabObj.favicon });
       if (state.activeTab?.id === tabObj.id) {
         addressBar.value = url;
+        updateSecurityIcon(url);
         updateBookmarkButton(url);
         toggleClearBtn();
       }
@@ -330,8 +352,9 @@ function setupWebviewEvents(tabObj) {
         tabObj.url = '';
         if (state.activeTab?.id === tabObj.id) {
           addressBar.value = '';
-          btnBack.disabled    = !wv.canGoBack();
-          btnForward.disabled = !wv.canGoForward();
+          btnBack.disabled    = !safeCanGoBack(tabObj);
+          btnForward.disabled = !safeCanGoForward(tabObj);
+          updateSecurityIcon('');
           updateBookmarkButton('');
           toggleClearBtn();
           showNewTabPage(true, tabObj);
@@ -344,8 +367,9 @@ function setupWebviewEvents(tabObj) {
     if (state.activeTab?.id === tabObj.id) {
       showNewTabPage(false, tabObj);
       addressBar.value = e.url;
-      btnBack.disabled    = !wv.canGoBack();
-      btnForward.disabled = !wv.canGoForward();
+      btnBack.disabled    = !safeCanGoBack(tabObj);
+      btnForward.disabled = !safeCanGoForward(tabObj);
+      updateSecurityIcon(e.url);
       updateBookmarkButton(e.url);
       toggleClearBtn();
     }
@@ -355,8 +379,9 @@ function setupWebviewEvents(tabObj) {
     tabObj.url = e.url;
     if (state.activeTab?.id === tabObj.id) {
       addressBar.value = e.url;
-      btnBack.disabled    = !wv.canGoBack();
-      btnForward.disabled = !wv.canGoForward();
+      btnBack.disabled    = !safeCanGoBack(tabObj);
+      btnForward.disabled = !safeCanGoForward(tabObj);
+      updateSecurityIcon(e.url);
       updateBookmarkButton(e.url);
     }
   });
@@ -491,8 +516,12 @@ function resizeWebviews() {
 // ══════════════════════════════════════════════════════════════
 function setupToolbar() {
   // Navigation
-  btnBack.addEventListener('click', () => state.activeTab?.webview.goBack());
-  btnForward.addEventListener('click', () => state.activeTab?.webview.goForward());
+  btnBack.addEventListener('click', () => {
+    if (safeCanGoBack(state.activeTab)) state.activeTab.webview.goBack();
+  });
+  btnForward.addEventListener('click', () => {
+    if (safeCanGoForward(state.activeTab)) state.activeTab.webview.goForward();
+  });
   btnHome.addEventListener('click', () => navigate(state.settings.homepage || 'https://www.google.com'));
 
   btnReload.addEventListener('click', () => {
@@ -527,6 +556,7 @@ function setupToolbar() {
     toggleClearBtn();
   });
 
+  btnClearAddr.addEventListener('mousedown', e => e.preventDefault());
   btnClearAddr.addEventListener('click', () => {
     addressBar.value = '';
     addressBar.focus();
@@ -609,6 +639,7 @@ function toggleExtPanel() {
   if (!isOpen) {
     extPanel.classList.add('open');
     extPanel.setAttribute('aria-hidden', 'false');
+    overlay.classList.remove('hidden');
     refreshExtPanel();
   }
 }
@@ -763,7 +794,7 @@ async function renderBookmarks(filter = '') {
 
   bookmarksList.innerHTML = filtered.map(b => `
     <div class="sidebar-item" data-url="${escHtml(b.url)}" role="listitem">
-      <img class="sidebar-item-favicon" src="${b.favicon || getDefaultFavicon()}" alt="" onerror="this.src='${getDefaultFavicon()}'">
+      <img class="sidebar-item-favicon" src="${escHtml(b.favicon || getDefaultFavicon())}" alt="">
       <div class="sidebar-item-info">
         <div class="sidebar-item-title" title="${escHtml(b.title || b.url)}">${escHtml(b.title || b.url)}</div>
         <div class="sidebar-item-url">${escHtml(b.url)}</div>
@@ -771,6 +802,10 @@ async function renderBookmarks(filter = '') {
       <button class="sidebar-item-del" data-action="delete" data-url="${escHtml(b.url)}" title="Remove bookmark">✕</button>
     </div>
   `).join('');
+
+  bookmarksList.querySelectorAll('.sidebar-item-favicon').forEach(img => {
+    img.addEventListener('error', () => { img.src = getDefaultFavicon(); }, { once: true });
+  });
 
   bookmarksList.querySelectorAll('.sidebar-item').forEach(item => {
     item.addEventListener('click', e => {
@@ -826,7 +861,7 @@ async function renderHistory(filter = '') {
     html += `<div class="history-date-header">${date}</div>`;
     html += items.map(h => `
       <div class="sidebar-item" data-url="${escHtml(h.url)}" role="listitem">
-        <img class="sidebar-item-favicon" src="${h.favicon || getDefaultFavicon()}" alt="" onerror="this.src='${getDefaultFavicon()}'">
+        <img class="sidebar-item-favicon" src="${escHtml(h.favicon || getDefaultFavicon())}" alt="">
         <div class="sidebar-item-info">
           <div class="sidebar-item-title">${escHtml(h.title || h.url)}</div>
           <div class="sidebar-item-url">${escHtml(h.url)}</div>
@@ -836,6 +871,10 @@ async function renderHistory(filter = '') {
     `).join('');
   }
   historyList.innerHTML = html;
+
+  historyList.querySelectorAll('.sidebar-item-favicon').forEach(img => {
+    img.addEventListener('error', () => { img.src = getDefaultFavicon(); }, { once: true });
+  });
 
   historyList.querySelectorAll('.sidebar-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -950,8 +989,17 @@ function setupUpdateToast() {
 //  GLOBAL EVENTS
 // ══════════════════════════════════════════════════════════════
 function setupGlobalEvents() {
-  // Open new tab from main process
-  window.myBrowser.on('open-new-tab', url => createTab(url));
+  // Open new tab from main process (supports string or { url, background })
+  window.myBrowser.on('open-new-tab', payload => {
+    if (typeof payload === 'string') createTab(payload);
+    else if (payload?.url) createTab(payload.url, Boolean(payload.background));
+  });
+
+  // Expand content to full screen when HTML5 video enters fullscreen
+  window.myBrowser.on('fullscreen-change', isFullscreen => {
+    document.body.classList.toggle('html-fullscreen', Boolean(isFullscreen));
+    requestAnimationFrame(() => resizeWebviews());
+  });
 }
 
 // ══════════════════════════════════════════════════════════════

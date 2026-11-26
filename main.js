@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, session, shell, Menu, clipboard } = require('electron');
 const path = require('path');
 const Store = require('electron-store');
 
@@ -28,7 +28,9 @@ let adBlockerEnabled = store.get('settings.adBlockerEnabled', true);
 let blockedCount = 0;
 let blockedUrls = [];
 
-const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+const CHROME_VER = process.versions.chrome || '131.0.0.0';
+const CHROME_MAJOR = CHROME_VER.split('.')[0];
+const CHROME_UA = `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${CHROME_VER} Safari/537.36`;
 app.userAgentFallback = CHROME_UA;
 
 // ─── Ad Blocker Domain List ───────────────────────────────────────────────────
@@ -81,7 +83,7 @@ function setupUserAgentAndHeaders() {
     headers['User-Agent'] = CHROME_UA;
     if (headers['sec-ch-ua'] || headers['Sec-CH-UA']) {
       delete headers['sec-ch-ua'];
-      headers['Sec-CH-UA'] = '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"';
+      headers['Sec-CH-UA'] = `"Google Chrome";v="${CHROME_MAJOR}", "Chromium";v="${CHROME_MAJOR}", "Not_A Brand";v="24"`;
     }
     if (headers['sec-ch-ua-mobile'] || headers['Sec-CH-UA-Mobile']) {
       delete headers['sec-ch-ua-mobile'];
@@ -153,6 +155,8 @@ function createWindow() {
   mainWindow.on('move', saveBounds);
   mainWindow.on('maximize', () => mainWindow.webContents.send('window-state', 'maximized'));
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('window-state', 'normal'));
+  mainWindow.on('enter-html-full-screen', () => mainWindow.webContents.send('fullscreen-change', true));
+  mainWindow.on('leave-html-full-screen', () => mainWindow.webContents.send('fullscreen-change', false));
   mainWindow.on('closed', () => { mainWindow = null; });
 }
 
@@ -261,7 +265,17 @@ function setupAutoUpdater() {
 }
 
 // ─── App Lifecycle ────────────────────────────────────────────────────────────
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Wipe stale HTTP cache & Service Workers on version upgrade (keeps logins/cookies)
+  try {
+    const ver = app.getVersion();
+    if (store.get('lastAppVersion') !== ver) {
+      await session.defaultSession.clearCache();
+      await session.defaultSession.clearStorageData({ storages: ['serviceworkers', 'cachestorage'] });
+      store.set('lastAppVersion', ver);
+    }
+  } catch (e) { /* ignore */ }
+
   setupUserAgentAndHeaders();
   setupAdBlocker();
   createWindow();
@@ -282,11 +296,74 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Open new-window requests as new tabs instead & ensure clean User-Agent
+// Open new-window requests as new tabs (or real popup for OAuth/windowed flows) & attach context menu
 app.on('web-contents-created', (_, contents) => {
   contents.setUserAgent(CHROME_UA);
-  contents.setWindowOpenHandler(({ url }) => {
-    mainWindow?.webContents.send('open-new-tab', url);
+
+  contents.setWindowOpenHandler(({ url, disposition, features }) => {
+    // Allow genuine popup windows (e.g. Google/GitHub OAuth login popups with dimensions or about:blank)
+    if ((features && features.length > 0) || url === 'about:blank') {
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 540,
+          height: 680,
+          autoHideMenuBar: true,
+          backgroundColor: '#0d1117',
+          webPreferences: {
+            contextIsolation: true,
+            sandbox: true
+          }
+        }
+      };
+    }
+    if (url) {
+      mainWindow?.webContents.send('open-new-tab', {
+        url,
+        background: disposition === 'background-tab'
+      });
+    }
     return { action: 'deny' };
   });
+
+  if (contents.getType() === 'webview') {
+    contents.on('context-menu', (_, params) => {
+      const template = [];
+      if (params.linkURL) {
+        template.push(
+          {
+            label: 'Open Link in New Tab',
+            click: () => mainWindow?.webContents.send('open-new-tab', { url: params.linkURL, background: true })
+          },
+          {
+            label: 'Copy Link Address',
+            click: () => clipboard.writeText(params.linkURL)
+          },
+          { type: 'separator' }
+        );
+      }
+      if (params.isEditable) {
+        template.push(
+          { role: 'cut', enabled: params.editFlags.canCut },
+          { role: 'copy', enabled: params.editFlags.canCopy },
+          { role: 'paste', enabled: params.editFlags.canPaste },
+          { role: 'selectAll' },
+          { type: 'separator' }
+        );
+      } else if (params.selectionText) {
+        template.push(
+          { role: 'copy' },
+          { type: 'separator' }
+        );
+      }
+      template.push(
+        { label: 'Back', enabled: contents.canGoBack(), click: () => contents.goBack() },
+        { label: 'Forward', enabled: contents.canGoForward(), click: () => contents.goForward() },
+        { label: 'Reload', click: () => contents.reload() },
+        { type: 'separator' },
+        { label: 'Inspect Element', click: () => contents.inspectElement(params.x, params.y) }
+      );
+      Menu.buildFromTemplate(template).popup({ window: mainWindow || undefined });
+    });
+  }
 });
