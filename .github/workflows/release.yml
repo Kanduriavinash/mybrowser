@@ -3,8 +3,11 @@ name: Build & Release MyBrowser
 on:
   push:
     tags:
-      - 'v*'          # trigger on version tags like v1.0.0, v1.1.0
-  workflow_dispatch:   # allow manual trigger from GitHub UI
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # Required for electron-builder to create GitHub Releases
 
 jobs:
   build-windows:
@@ -24,21 +27,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Electron app (Windows)
+      - name: Build & publish to GitHub Releases
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npx electron-builder --win nsis portable --publish always
 
-      - name: List dist output
-        run: Get-ChildItem dist/ -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object Name, Length
-
-      - name: Upload artifacts to workflow run
+      - name: Upload build artifacts (backup)
         uses: actions/upload-artifact@v4
         with:
-          name: MyBrowser-Windows
+          name: MyBrowser-Windows-${{ github.ref_name }}
           path: |
             dist/*.exe
-            dist/*.zip
             dist/latest.yml
           if-no-files-found: warn
