@@ -28,6 +28,9 @@ let adBlockerEnabled = store.get('settings.adBlockerEnabled', true);
 let blockedCount = 0;
 let blockedUrls = [];
 
+const CHROME_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+app.userAgentFallback = CHROME_UA;
+
 // ─── Ad Blocker Domain List ───────────────────────────────────────────────────
 const AD_DOMAINS = [
   'doubleclick.net','googleadservices.com','googlesyndication.com',
@@ -57,12 +60,39 @@ function shouldBlockUrl(url) {
   try {
     const urlObj = new URL(url);
     const hostname = urlObj.hostname;
+    // Allow Google BotGuard (/bg/) scripts so Google Search & Sign-In never degrade
+    if (hostname === 'pagead2.googlesyndication.com' && urlObj.pathname.startsWith('/bg/')) {
+      return false;
+    }
     return AD_DOMAINS.some(domain =>
       hostname === domain || hostname.endsWith('.' + domain)
     );
   } catch {
     return false;
   }
+}
+
+// ─── Browser Headers & User-Agent Spoofing ────────────────────────────────────
+function setupUserAgentAndHeaders() {
+  session.defaultSession.setUserAgent(CHROME_UA);
+
+  session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['*://*/*'] }, (details, callback) => {
+    const headers = details.requestHeaders;
+    headers['User-Agent'] = CHROME_UA;
+    if (headers['sec-ch-ua'] || headers['Sec-CH-UA']) {
+      delete headers['sec-ch-ua'];
+      headers['Sec-CH-UA'] = '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"';
+    }
+    if (headers['sec-ch-ua-mobile'] || headers['Sec-CH-UA-Mobile']) {
+      delete headers['sec-ch-ua-mobile'];
+      headers['Sec-CH-UA-Mobile'] = '?0';
+    }
+    if (headers['sec-ch-ua-platform'] || headers['Sec-CH-UA-Platform']) {
+      delete headers['sec-ch-ua-platform'];
+      headers['Sec-CH-UA-Platform'] = '"Windows"';
+    }
+    callback({ requestHeaders: headers });
+  });
 }
 
 // ─── Ad Blocker Setup ─────────────────────────────────────────────────────────
@@ -232,6 +262,7 @@ function setupAutoUpdater() {
 
 // ─── App Lifecycle ────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
+  setupUserAgentAndHeaders();
   setupAdBlocker();
   createWindow();
   setupIPC();
@@ -251,8 +282,9 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Open new-window requests as new tabs instead
+// Open new-window requests as new tabs instead & ensure clean User-Agent
 app.on('web-contents-created', (_, contents) => {
+  contents.setUserAgent(CHROME_UA);
   contents.setWindowOpenHandler(({ url }) => {
     mainWindow?.webContents.send('open-new-tab', url);
     return { action: 'deny' };

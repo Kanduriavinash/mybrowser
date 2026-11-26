@@ -6,7 +6,7 @@
 
 **A fast, private, and beautiful custom desktop browser — built for everyone.**
 
-[![Version](https://img.shields.io/badge/version-1.0.2-7c3aed?style=for-the-badge)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.0.3-7c3aed?style=for-the-badge)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows-blue?style=for-the-badge&logo=windows)](https://github.com/Kanduriavinash/mybrowser/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Built with Electron](https://img.shields.io/badge/built%20with-Electron-47848f?style=for-the-badge&logo=electron)](https://www.electronjs.org/)
@@ -21,15 +21,15 @@
 
 <div align="center">
 
-### 👉 [**Download MyBrowser Installer (`MyBrowser-Setup-1.0.2.exe`)**](https://github.com/Kanduriavinash/mybrowser/releases/latest/download/MyBrowser-Setup-1.0.2.exe) 👈
+### 👉 [**Download MyBrowser Installer (`MyBrowser-Setup-1.0.3.exe`)**](https://github.com/Kanduriavinash/mybrowser/releases/latest/download/MyBrowser-Setup-1.0.3.exe) 👈
 
-[**Download Portable Version (`MyBrowser-Portable-1.0.2.exe`)**](https://github.com/Kanduriavinash/mybrowser/releases/latest/download/MyBrowser-Portable-1.0.2.exe) · [**View All Releases**](https://github.com/Kanduriavinash/mybrowser/releases/latest)
+[**Download Portable Version (`MyBrowser-Portable-1.0.3.exe`)**](https://github.com/Kanduriavinash/mybrowser/releases/latest/download/MyBrowser-Portable-1.0.3.exe) · [**View All Releases**](https://github.com/Kanduriavinash/mybrowser/releases/latest)
 
 </div>
 
 **How to install:**
 1. Click **Download MyBrowser Installer** above (or pick Portable if you don't want to install)
-2. Run **`MyBrowser-Setup-1.0.2.exe`** (if Windows SmartScreen appears, click **More info → Run anyway** since the app is open-source and unsigned)
+2. Run **`MyBrowser-Setup-1.0.3.exe`** (if Windows SmartScreen appears, click **More info → Run anyway** since the app is open-source and unsigned)
 3. MyBrowser appears on your **Desktop** and **Start Menu** — open it and start browsing! 🎉
 
 > ✅ **Auto-updates built in** — MyBrowser will silently download and apply new versions in the background. You'll never need to manually update.

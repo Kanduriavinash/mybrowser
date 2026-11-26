@@ -711,7 +711,10 @@ function setupNewTabPage() {
       if (val) {
         navigate(val);
         newtabSearch.value = '';
-        addressBar.value = '';
+        if (state.activeTab?.url) {
+          addressBar.value = state.activeTab.url;
+          toggleClearBtn();
+        }
       }
     }
   });
