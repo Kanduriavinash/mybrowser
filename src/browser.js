@@ -325,9 +325,25 @@ function setupWebviewEvents(tabObj) {
   });
 
   wv.addEventListener('did-navigate', (e) => {
+    if (isNewTabUrl(e.url)) {
+      if (!tabObj.pendingUrl) {
+        tabObj.url = '';
+        if (state.activeTab?.id === tabObj.id) {
+          addressBar.value = '';
+          btnBack.disabled    = !wv.canGoBack();
+          btnForward.disabled = !wv.canGoForward();
+          updateBookmarkButton('');
+          toggleClearBtn();
+          showNewTabPage(true, tabObj);
+        }
+      }
+      return;
+    }
+
     tabObj.url = e.url;
     if (state.activeTab?.id === tabObj.id) {
-      addressBar.value = isNewTabUrl(e.url) ? '' : e.url;
+      showNewTabPage(false, tabObj);
+      addressBar.value = e.url;
       btnBack.disabled    = !wv.canGoBack();
       btnForward.disabled = !wv.canGoForward();
       updateBookmarkButton(e.url);

@@ -13,6 +13,7 @@ jobs:
   build-windows:
     name: Build Windows Installer
     runs-on: windows-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -27,62 +28,51 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify icon file exists
+      - name: Verify icon file
+        shell: pwsh
         run: |
           if (Test-Path "assets/icons/icon.ico") {
-            Write-Host "✅ icon.ico found"
-            Get-Item "assets/icons/icon.ico" | Select-Object Name, Length
+            $len = (Get-Item "assets/icons/icon.ico").Length
+            Write-Host "icon.ico found ($len bytes)"
           } else {
-            Write-Host "❌ icon.ico NOT found — generating from PNG..."
-            python -c "
-from PIL import Image
-import struct, io
-
-img = Image.open('assets/icons/logo.png').convert('RGBA')
-sizes = [16, 32, 48, 64, 128, 256]
-images = []
-for s in sizes:
-    resized = img.resize((s, s), Image.LANCZOS)
-    buf = io.BytesIO()
-    resized.save(buf, format='PNG')
-    images.append(buf.getvalue())
-
-num = len(images)
-header = struct.pack('<HHH', 0, 1, num)
-dir_size = num * 16
-offset = 6 + dir_size
-dirs = b''
-for i, s in enumerate(sizes):
-    data = images[i]
-    dirs += struct.pack('<BBBBHHII', s if s < 256 else 0, s if s < 256 else 0, 0, 0, 1, 32, len(data), offset)
-    offset += len(data)
-
-with open('assets/icons/icon.ico', 'wb') as f:
-    f.write(header + dirs)
-    for data in images:
-        f.write(data)
-print('ICO generated OK')
-"
-            Write-Host "✅ icon.ico generated"
+            throw "assets/icons/icon.ico is missing!"
           }
 
-      - name: Build & publish to GitHub Releases
+      - name: Build Electron app (Installer + Portable)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DEBUG: electron-builder
-        run: npx electron-builder --win nsis portable --publish always
+        run: npx electron-builder --win nsis portable --publish never
 
-      - name: List dist output
-        if: always()
+      - name: List built files
+        shell: pwsh
         run: |
-          if (Test-Path dist/) {
-            Get-ChildItem dist/ -Recurse | Where-Object { !$_.PSIsContainer } | Select-Object Name, Length
-          } else {
-            Write-Host "dist/ folder not found"
+          Get-ChildItem dist/ | Where-Object { !$_.PSIsContainer } | Select-Object Name, @{N='Size(MB)';E={[math]::Round($_.Length/1MB,1)}}
+
+      - name: Create & Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = "${{ github.ref_name }}"
+          if (-not $tag -or $tag -eq "main") {
+            $tag = "v" + (Get-Content package.json | ConvertFrom-Json).version
+          }
+          $files = @()
+          $files += Get-ChildItem dist/ -Filter "*.exe" | Select-Object -ExpandProperty FullName
+          $files += Get-ChildItem dist/ -Filter "*.blockmap" | Select-Object -ExpandProperty FullName
+          if (Test-Path "dist/latest.yml") {
+            $files += (Resolve-Path "dist/latest.yml").Path
           }
 
-      - name: Upload artifacts (backup)
+          # Delete existing release if present so we recreate cleanly and publicly
+          gh release delete $tag --yes --repo ${{ github.repository }} 2>$null
+
+          gh release create $tag @files `
+            --repo ${{ github.repository }} `
+            --title "MyBrowser $tag" `
+            --generate-notes
+
+      - name: Upload artifacts (backup copy in Actions)
         if: always()
         uses: actions/upload-artifact@v4
         with:

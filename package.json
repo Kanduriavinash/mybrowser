@@ -41,10 +41,13 @@
       ],
       "icon": "assets/icons/icon.ico",
       "forceCodeSigning": false,
-      "sign": null,
-      "artifactName": "${productName}-${version}-Windows-${arch}.${ext}"
+      "sign": null
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}.${ext}"
     },
     "nsis": {
+      "artifactName": "${productName}-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
