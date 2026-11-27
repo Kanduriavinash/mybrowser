@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: http:;">
   <title>MyBrowser</title>
-  <meta name="description" content="MyBrowser — Your premium custom desktop browser">
+  <meta name="description" content="MyBrowser — Your fast, private custom desktop browser">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -15,31 +15,46 @@
 
   <!-- ═══════════════════ TITLE BAR ═══════════════════ -->
   <div id="title-bar">
-    <!-- macOS-style window controls (left side) -->
-    <div id="window-controls">
-      <button class="win-btn close-btn"    id="btn-close"    title="Close">
-        <svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
-      </button>
-      <button class="win-btn minimize-btn" id="btn-minimize" title="Minimize">
-        <svg viewBox="0 0 10 10"><line x1="2" y1="5" x2="8" y2="5"/></svg>
-      </button>
-      <button class="win-btn maximize-btn" id="btn-maximize" title="Maximize">
-        <svg viewBox="0 0 10 10" id="maximize-icon"><rect x="2" y="2" width="6" height="6" rx="0.5"/></svg>
-      </button>
+    <button class="title-icon-btn" id="btn-vertical-tabs" title="Toggle Vertical Tabs (Ctrl+Shift+V)" aria-label="Toggle vertical tabs">
+      <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="14" height="12" rx="2"/>
+        <line x1="6.5" y1="3" x2="6.5" y2="15"/>
+      </svg>
+    </button>
+
+    <div id="incognito-badge" class="hidden" title="Private Window — history is not saved">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 8h12M4.5 8l1-3.5a1 1 0 0 1 1-.7h3a1 1 0 0 1 1 .7l1 3.5"/>
+        <circle cx="5.5" cy="11.5" r="1.8"/><circle cx="10.5" cy="11.5" r="1.8"/>
+      </svg>
+      <span>Private</span>
     </div>
 
-    <!-- Tab bar -->
+    <!-- Tab bar (horizontal by default, moves to left rail when vertical-tabs is active) -->
     <div id="tab-bar" role="tablist" aria-label="Browser Tabs">
       <!-- Tabs injected by JS -->
     </div>
 
     <button id="btn-new-tab" title="New Tab (Ctrl+T)" aria-label="Open new tab">
-      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round">
         <line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>
       </svg>
     </button>
 
     <div id="drag-region"></div>
+
+    <!-- Windows-style Window Controls on the Right Side -->
+    <div id="window-controls">
+      <button class="win-btn minimize-btn" id="btn-minimize" title="Minimize" aria-label="Minimize window">
+        <svg viewBox="0 0 10 10"><line x1="1.5" y1="5" x2="8.5" y2="5"/></svg>
+      </button>
+      <button class="win-btn maximize-btn" id="btn-maximize" title="Maximize" aria-label="Maximize window">
+        <svg viewBox="0 0 10 10" id="maximize-icon"><rect x="1.8" y="1.8" width="6.4" height="6.4" rx="0.5"/></svg>
+      </button>
+      <button class="win-btn close-btn" id="btn-close" title="Close" aria-label="Close window">
+        <svg viewBox="0 0 10 10"><line x1="2" y1="2" x2="8" y2="8"/><line x1="8" y1="2" x2="2" y2="8"/></svg>
+      </button>
+    </div>
   </div>
 
   <!-- ═══════════════════ TOOLBAR ═══════════════════ -->
@@ -70,42 +85,85 @@
       </button>
     </div>
 
-    <!-- Address bar -->
-    <div id="address-bar-wrap">
-      <div id="security-icon" title="Connection Info">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10 2L18 5.5V10C18 14.5 10 18 10 18C10 18 2 14.5 2 10V5.5Z"/>
-          <polyline points="7,10 9,12 13,8"/>
-        </svg>
+    <!-- Address bar + Omnibox autocomplete -->
+    <div id="address-bar-outer">
+      <div id="address-bar-wrap">
+        <div id="security-icon" title="Connection Info">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2L18 5.5V10C18 14.5 10 18 10 18C10 18 2 14.5 2 10V5.5Z"/>
+            <polyline points="7,10 9,12 13,8"/>
+          </svg>
+        </div>
+        <input
+          type="text"
+          id="address-bar"
+          placeholder="Search or enter web address (Ctrl+L)..."
+          spellcheck="false"
+          autocomplete="off"
+          autocorrect="off"
+          role="combobox"
+          aria-label="Address bar"
+        >
+        <button id="zoom-pill" class="addr-pill hidden" title="Click to reset zoom (Ctrl+0)">100%</button>
+        <button id="btn-reader" class="addr-mini-btn" title="Reader Mode (Alt+R)" aria-label="Toggle Reader Mode">
+          <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 4.5C3 3.7 3.7 3 4.5 3H9v12H4.5A1.5 1.5 0 0 1 3 13.5v-9z"/>
+            <path d="M15 4.5c0-.8-.7-1.5-1.5-1.5H9v12h4.5a1.5 1.5 0 0 0 1.5-1.5v-9z"/>
+          </svg>
+        </button>
+        <div id="loading-indicator" class="hidden">
+          <div class="spinner"></div>
+        </div>
+        <button id="btn-clear-address" class="hidden" title="Clear" aria-label="Clear address">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>
+          </svg>
+        </button>
       </div>
-      <input
-        type="text"
-        id="address-bar"
-        placeholder="Search or enter web address..."
-        spellcheck="false"
-        autocomplete="off"
-        autocorrect="off"
-        role="combobox"
-        aria-label="Address bar"
-      >
-      <div id="loading-indicator" class="hidden">
-        <div class="spinner"></div>
-      </div>
-      <button id="btn-clear-address" class="hidden" title="Clear" aria-label="Clear address">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/>
-        </svg>
-      </button>
+      <div id="omnibox-dropdown" class="hidden" role="listbox" aria-label="Suggestions"></div>
     </div>
 
-    <!-- Action buttons -->
+    <!-- Action buttons (right side) -->
     <div class="action-group">
       <button class="action-btn" id="btn-bookmark" title="Bookmark this page (Ctrl+D)" aria-label="Bookmark this page">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="bookmark-icon">
           <path d="M5 3h10v15l-5-3-5 3V3z"/>
         </svg>
       </button>
-      <button class="action-btn" id="btn-bookmarks-panel" title="Bookmarks" aria-label="Open bookmarks">
+      <button class="action-btn" id="btn-split-view" title="Split View (Alt+S)" aria-label="Toggle Split View">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="14" height="12" rx="2"/>
+          <line x1="10" y1="4" x2="10" y2="16"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-pip" title="Picture-in-Picture" aria-label="Toggle Picture-in-Picture">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.5" y="4" width="15" height="12" rx="2"/>
+          <rect x="10.5" y="10" width="5" height="4" rx="0.8" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-screenshot" title="Capture Screenshot (Ctrl+Shift+S)" aria-label="Capture Screenshot">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 7V5a1 1 0 0 1 1-1h2M16 7V5a1 1 0 0 0-1-1h-2M4 13v2a1 1 0 0 0 1 1h2M16 13v2a1 1 0 0 1-1 1h-2"/>
+          <circle cx="10" cy="10" r="2.6"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-command-palette" title="Command Palette (Ctrl+K)" aria-label="Open Command Palette">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="14" height="12" rx="2"/>
+          <polyline points="6.5,8.5 9,10.5 6.5,12.5"/>
+          <line x1="10.5" y1="12.5" x2="13.5" y2="12.5"/>
+        </svg>
+      </button>
+      <button class="action-btn" id="btn-downloads-panel" title="Downloads (Ctrl+J)" aria-label="Open downloads">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 3v10"/>
+          <polyline points="6,9 10,13 14,9"/>
+          <path d="M4 16h12"/>
+        </svg>
+        <span class="badge hidden" id="downloads-badge">0</span>
+      </button>
+      <button class="action-btn" id="btn-bookmarks-panel" title="Bookmarks (Ctrl+B)" aria-label="Open bookmarks">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 3h8v11l-4-2.5L4 14Z"/>
           <path d="M10 3.5h6v12l-4-2.5"/>
@@ -117,7 +175,13 @@
           <polyline points="10,6 10,10 13,13"/>
         </svg>
       </button>
-      <button class="action-btn ext-btn" id="btn-extension" title="Ad Blocker Extension" aria-label="Open ad blocker">
+      <button class="action-btn" id="btn-web-panel" title="Sidebar Web Panels" aria-label="Open Sidebar Web Panels">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="14" height="12" rx="2"/>
+          <line x1="12.5" y1="4" x2="12.5" y2="16"/>
+        </svg>
+      </button>
+      <button class="action-btn ext-btn" id="btn-extension" title="Privacy & Ad Blocker" aria-label="Open ad blocker">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M10 2L17 5v5c0 5-7 8-7 8S3 15 3 10V5Z"/>
           <line x1="7" y1="10" x2="13" y2="10"/>
@@ -136,11 +200,50 @@
   <!-- ═══════════════════ BROWSER CONTENT ═══════════════════ -->
   <div id="browser-content">
     <!-- Webviews injected by JS -->
+    <div id="split-resizer" class="hidden" title="Drag to resize split panes">
+      <button id="btn-close-split" title="Close Split View">✕</button>
+    </div>
 
-    <!-- New Tab Page (shown when no webview or blank tab) -->
+    <!-- Find in Page Bar -->
+    <div id="find-bar" class="hidden" role="search" aria-label="Find in page">
+      <input type="text" id="find-input" placeholder="Find in page..." autocomplete="off" spellcheck="false">
+      <span id="find-count">0 / 0</span>
+      <button id="find-case" class="find-btn" title="Match Case">Aa</button>
+      <button id="find-prev" class="find-btn" title="Previous (Shift+Enter)">▲</button>
+      <button id="find-next" class="find-btn" title="Next (Enter)">▼</button>
+      <button id="find-close" class="find-btn" title="Close (Esc)">✕</button>
+    </div>
+
+    <!-- Reader Mode Overlay -->
+    <div id="reader-overlay" class="hidden theme-dark" role="article" aria-label="Reader Mode">
+      <div class="reader-toolbar">
+        <div class="reader-controls">
+          <span class="reader-badge">Reader Mode</span>
+          <span id="reader-read-time" class="reader-meta"></span>
+        </div>
+        <div class="reader-controls">
+          <button class="reader-btn" id="reader-font-dec" title="Smaller text">A-</button>
+          <button class="reader-btn" id="reader-font-inc" title="Larger text">A+</button>
+          <button class="reader-btn reader-theme-btn" data-theme="dark">Dark</button>
+          <button class="reader-btn reader-theme-btn" data-theme="sepia">Sepia</button>
+          <button class="reader-btn reader-theme-btn" data-theme="light">Light</button>
+          <button class="reader-btn reader-close-btn" id="reader-close">Exit Reader ✕</button>
+        </div>
+      </div>
+      <div class="reader-scroll">
+        <div class="reader-article" id="reader-article-body"></div>
+      </div>
+    </div>
+
+    <!-- New Tab Page -->
     <div id="new-tab-page" class="hidden">
       <div class="newtab-bg"></div>
       <div class="newtab-inner">
+        <div class="newtab-clock-wrap">
+          <div id="newtab-clock">09:30</div>
+          <div id="newtab-greeting">Good morning</div>
+        </div>
+
         <div class="newtab-brand">
           <div class="brand-logo">
             <svg viewBox="0 0 60 60" fill="none">
@@ -157,7 +260,7 @@
             </svg>
           </div>
           <h1>MyBrowser</h1>
-          <p class="brand-sub">Fast. Private. Yours.</p>
+          <p class="brand-sub" id="newtab-sub">Fast. Private. Yours.</p>
         </div>
 
         <div class="newtab-search-box">
@@ -175,33 +278,43 @@
         </div>
 
         <div class="quick-links" id="quick-links">
-          <a class="ql-item" href="#" data-url="https://www.google.com" id="ql-google">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#4285f4,#34a853)">G</div>
-            <span>Google</span>
-          </a>
-          <a class="ql-item" href="#" data-url="https://www.youtube.com" id="ql-youtube">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#ff0000,#cc0000)">▶</div>
-            <span>YouTube</span>
-          </a>
-          <a class="ql-item" href="#" data-url="https://github.com" id="ql-github">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#333,#555)">
-              <svg viewBox="0 0 24 24" fill="white" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.5.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.58 9.58 0 0 1 12 6.8c.85.004 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
-            </div>
-            <span>GitHub</span>
-          </a>
-          <a class="ql-item" href="#" data-url="https://www.reddit.com" id="ql-reddit">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#ff4500,#e03d00)">r/</div>
-            <span>Reddit</span>
-          </a>
-          <a class="ql-item" href="#" data-url="https://twitter.com" id="ql-twitter">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#000,#333)">𝕏</div>
-            <span>Twitter</span>
-          </a>
-          <a class="ql-item" href="#" data-url="https://www.netflix.com" id="ql-netflix">
-            <div class="ql-icon" style="background:linear-gradient(135deg,#e50914,#b20710)">N</div>
-            <span>Netflix</span>
-          </a>
+          <!-- Rendered dynamically by JS + Add Shortcut tile -->
         </div>
+      </div>
+
+      <!-- Add Shortcut Dialog inside New Tab -->
+      <div id="ql-modal" class="hidden" role="dialog" aria-label="Add Shortcut">
+        <div class="ql-modal-card">
+          <h3>Add Quick Link</h3>
+          <input type="text" id="ql-input-title" class="settings-input" placeholder="Name (e.g. Wikipedia)" autocomplete="off">
+          <input type="text" id="ql-input-url" class="settings-input" placeholder="URL (e.g. https://wikipedia.org)" autocomplete="off">
+          <div class="ql-modal-actions">
+            <button class="settings-action-btn" id="ql-modal-cancel">Cancel</button>
+            <button class="settings-action-btn primary" id="ql-modal-save">Add</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ DOWNLOADS SIDEBAR ═══════════════════ -->
+  <div id="downloads-sidebar" class="sidebar" role="dialog" aria-label="Downloads" aria-hidden="true">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 3v10"/><polyline points="6,9 10,13 14,9"/><path d="M4 16h12"/>
+        </svg>
+        <h2>Downloads</h2>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="text-action-btn" id="clear-downloads-btn">Clear</button>
+        <button class="sidebar-close" id="close-downloads" aria-label="Close downloads">✕</button>
+      </div>
+    </div>
+    <div class="sidebar-body" id="downloads-list" role="list">
+      <div class="empty-state">
+        <div class="empty-icon">⬇️</div>
+        <p>No downloads yet.</p>
       </div>
     </div>
   </div>
@@ -259,21 +372,53 @@
     </div>
   </div>
 
+  <!-- ═══════════════════ WEB PANEL SIDEBAR (SIDE APPS) ═══════════════════ -->
+  <div id="web-panel-sidebar" class="sidebar web-panel-sidebar" role="dialog" aria-label="Web Panels" aria-hidden="true">
+    <div class="sidebar-header">
+      <div class="sidebar-title">
+        <h2>Side Panels</h2>
+      </div>
+      <button class="sidebar-close" id="close-web-panel" aria-label="Close web panel">✕</button>
+    </div>
+    <div class="web-panel-tabs">
+      <button class="wp-tab active" data-panel="notes">Notes</button>
+      <button class="wp-tab" data-panel="calc">Calc</button>
+      <button class="wp-tab" data-panel="https://lite.duckduckgo.com/lite/">Search</button>
+      <button class="wp-tab" data-panel="https://en.m.wikipedia.org">Wiki</button>
+    </div>
+    <div class="web-panel-body">
+      <div id="wp-notes-view" class="wp-pane">
+        <textarea id="wp-notes-area" placeholder="Scratchpad notes (saved automatically)..."></textarea>
+      </div>
+      <div id="wp-calc-view" class="wp-pane hidden">
+        <div class="wp-calc-box">
+          <input type="text" id="wp-calc-input" class="settings-input" placeholder="e.g. (1280 * 0.75) + 42" autocomplete="off">
+          <div id="wp-calc-result" class="wp-calc-res">= 0</div>
+          <div class="wp-calc-hint">Supports +, -, *, /, %, ^ and parentheses</div>
+        </div>
+      </div>
+      <div id="wp-web-view" class="wp-pane hidden">
+        <div class="wp-url-bar">
+          <input type="text" id="wp-custom-url" class="settings-input" placeholder="Enter URL..." autocomplete="off">
+        </div>
+        <webview id="wp-webview" src="about:blank" webpreferences="contextIsolation=true"></webview>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════ AD BLOCKER EXTENSION PANEL ═══════════════════ -->
-  <div id="extension-panel" class="ext-panel" role="dialog" aria-label="Ad Blocker Extension" aria-hidden="true">
+  <div id="extension-panel" class="ext-panel" role="dialog" aria-label="Privacy & Ad Blocker" aria-hidden="true">
     <div class="ext-panel-header">
       <div class="ext-brand">
         <div class="ext-shield">🛡️</div>
         <div>
-          <div class="ext-title">Ad Blocker</div>
-          <div class="ext-sub">MyBrowser Extension</div>
+          <div class="ext-title">Privacy Shield</div>
+          <div class="ext-sub">Ad Blocker & Trackers</div>
         </div>
       </div>
       <label class="toggle" title="Toggle Ad Blocker" aria-label="Toggle Ad Blocker">
         <input type="checkbox" id="adblocker-toggle" checked>
-        <span class="toggle-track">
-          <span class="toggle-thumb"></span>
-        </span>
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
       </label>
     </div>
 
@@ -286,6 +431,39 @@
       <div class="stat-tile">
         <div class="stat-val status-on" id="protection-status">ON</div>
         <div class="stat-lbl">Protection</div>
+      </div>
+    </div>
+
+    <div class="ext-site-controls">
+      <div class="ext-control-row">
+        <div>
+          <div class="ext-ctrl-title" id="site-shield-host">Shield for current site</div>
+          <div class="ext-ctrl-sub">Pause ad blocking on this domain</div>
+        </div>
+        <label class="toggle" title="Shield for current site">
+          <input type="checkbox" id="site-shield-toggle" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="ext-control-row">
+        <div>
+          <div class="ext-ctrl-title">Strip Tracking Params</div>
+          <div class="ext-ctrl-sub">Remove utm_*, fbclid, gclid</div>
+        </div>
+        <label class="toggle" title="Strip tracking parameters">
+          <input type="checkbox" id="ext-strip-tracking" checked>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
+      </div>
+      <div class="ext-control-row">
+        <div>
+          <div class="ext-ctrl-title">HTTPS-Only Mode</div>
+          <div class="ext-ctrl-sub">Upgrade HTTP links automatically</div>
+        </div>
+        <label class="toggle" title="HTTPS-Only mode">
+          <input type="checkbox" id="ext-https-only">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+        </label>
       </div>
     </div>
 
@@ -320,7 +498,7 @@
     </div>
     <div class="settings-body">
       <div class="settings-section">
-        <div class="settings-section-title">General</div>
+        <div class="settings-section-title">General & Layout</div>
         <div class="settings-row">
           <label class="settings-label" for="settings-homepage">Homepage</label>
           <input type="text" id="settings-homepage" class="settings-input" placeholder="https://www.google.com" autocomplete="off" spellcheck="false">
@@ -329,30 +507,79 @@
           <label class="settings-label" for="settings-search-engine">Search Engine URL</label>
           <input type="text" id="settings-search-engine" class="settings-input" placeholder="https://www.google.com/search?q=" autocomplete="off" spellcheck="false">
         </div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">Restore Previous Session</div>
+            <div class="settings-sublabel">Reopen tabs from last session on startup</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="settings-restore-session" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">Vertical Tab Sidebar</div>
+            <div class="settings-sublabel">Dock tabs along the left side (Ctrl+Shift+V)</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="settings-vertical-tabs">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
       </div>
+
       <div class="settings-section">
-        <div class="settings-section-title">Privacy</div>
+        <div class="settings-section-title">Privacy & Security</div>
         <div class="settings-row settings-toggle-row">
           <div>
             <div class="settings-label">Ad Blocker</div>
-            <div class="settings-sublabel">Block ads and trackers across all sites</div>
+            <div class="settings-sublabel">Block ads and trackers across sites</div>
           </div>
           <label class="toggle" title="Toggle Ad Blocker">
             <input type="checkbox" id="settings-adblocker" checked>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
           </label>
         </div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">Strip URL Trackers</div>
+            <div class="settings-sublabel">Clean utm_*, fbclid, gclid parameters</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="settings-strip-tracking" checked>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">HTTPS-Only Mode</div>
+            <div class="settings-sublabel">Upgrade public HTTP pages to HTTPS</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="settings-https-only">
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div class="settings-row settings-toggle-row">
+          <div>
+            <div class="settings-label">Private Browsing</div>
+            <div class="settings-sublabel">Launch isolated window (Ctrl+Shift+N)</div>
+          </div>
+          <button class="settings-action-btn" id="settings-new-private">New Private</button>
+        </div>
       </div>
+
       <div class="settings-section">
         <div class="settings-section-title">Data</div>
-        <div class="settings-row">
+        <div class="settings-row settings-toggle-row">
           <div>
             <div class="settings-label">Clear Browsing History</div>
             <div class="settings-sublabel">Remove all visited pages from history</div>
           </div>
           <button class="settings-action-btn danger" id="settings-clear-history">Clear History</button>
         </div>
-        <div class="settings-row">
+        <div class="settings-row settings-toggle-row">
           <div>
             <div class="settings-label">Clear Ad Blocker Stats</div>
             <div class="settings-sublabel">Reset blocked ads counter</div>
@@ -360,11 +587,30 @@
           <button class="settings-action-btn" id="settings-clear-stats">Clear Stats</button>
         </div>
       </div>
+
       <div class="settings-footer">
         <button class="settings-save-btn" id="settings-save">Save Settings</button>
       </div>
     </div>
   </div>
+
+  <!-- ═══════════════════ COMMAND PALETTE (Ctrl+K) ═══════════════════ -->
+  <div id="command-palette-wrap" class="hidden" role="dialog" aria-label="Command Palette">
+    <div id="command-palette">
+      <div class="cp-search-row">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="9" cy="9" r="6"/><line x1="13.5" y1="13.5" x2="17" y2="17"/>
+        </svg>
+        <input type="text" id="cp-input" placeholder="Type a command, tab, bookmark, or history..." autocomplete="off" spellcheck="false">
+        <span class="cp-esc">ESC</span>
+      </div>
+      <div id="cp-results" role="listbox"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ TAB CONTEXT MENU & TOOLTIP ═══════════════════ -->
+  <div id="tab-context-menu" class="hidden" role="menu"></div>
+  <div id="tab-tooltip" class="hidden" role="tooltip"></div>
 
   <!-- ═══════════════════ UPDATE TOAST ═══════════════════ -->
   <div id="update-toast" class="hidden" role="alert" aria-live="polite">
@@ -381,5 +627,6 @@
   </div>
 
   <script src="browser.js"></script>
+  <script src="features.js"></script>
 </body>
 </html>
